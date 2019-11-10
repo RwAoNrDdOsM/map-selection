@@ -1,0 +1,16 @@
+mod = [
+	"map selection"
+]
+
+package = [
+	"resource_packages/map selection/map selection"
+]
+
+lua = [
+	"scripts/mods/map selection/*"
+	"materials/map selection/*"
+]
+
+material = [
+	"materials/map selection/*"
+]

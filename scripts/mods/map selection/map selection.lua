@@ -151,7 +151,7 @@ end]]
 
 -- Maps and level positions
 	-- Prolouge
-	LevelSettings.prologue.description_text = "nik_loading_screen_prologue_01"
+	--[[LevelSettings.prologue.description_text = "nik_loading_screen_prologue_01"
     LevelSettings.prologue.map_settings = {
         position = {
             250,
@@ -159,7 +159,7 @@ end]]
         },
 		area = "helmgart_inner",
 		percentage = 0.75,
-    }
+    }]]
 
     -- Act 1
     -- Righteous Stand
@@ -322,28 +322,38 @@ end]]
     -- Horn of Magnus
     LevelSettings.magnus.map_settings = {
         position = {
-            0,
-            0,
+            -25,
+            225,
         },
-        area = "ubersriek",
+        area = "holly",
     }
 
     -- Garden of Morr
     LevelSettings.cemetery.map_settings = {
         position = {
-            0,
-            0,
+            -425,
+            75,
         },
-        area = "ubersriek",
+        area = "holly",
     }
     -- Engines of War
     LevelSettings.forest_ambush.map_settings = {
         position = {
-            0,
-            0,
+            450,
+            25,
         },
-        area = "ubersriek",
-    }
+        area = "holly",
+	}
+	
+	-- Winds of Magic
+	LevelSettings.crater.map_settings = {
+        position = {
+            0,
+            37.5,
+        },
+		area = "scorpion",
+		percentage = 1.35,
+	}
     
     -- Misc
     for level_key, level_data in pairs(LevelSettings) do
@@ -502,9 +512,11 @@ AreaSettings.holly.map_settings = {
         630,
         -425,
 	},
+	modify_levels = true,
+	modify_levels_percentage = 0.75,
 }
 AreaSettings.holly.map = {
-    "ubersriek"
+    "holly"
 }
 AreaSettings.celebrate.map_settings = {}
 
@@ -539,6 +551,36 @@ AreaSettings.bogenhafen.map_settings = {
 }
 AreaSettings.bogenhafen.map = {
     "bogenhafen"
+}
+AreaSettings.scorpion.map_texture = "map_world"
+--[[AreaSettings.scorpion.create_mission_background_widget = function ()
+	return UIWidgets.create_texture_with_style("map_bogenhafen", "map_texture", {
+		color = {
+			255,
+			255,
+			255,
+			255
+		},
+		offset = {
+			0,
+			0,
+			0
+		},
+		--[[texture_size = {
+			1077,
+			637
+		}
+	})
+end]]
+AreaSettings.scorpion.map_settings = {
+    present_by = "map",
+    position = {
+        -250,
+		-75,
+	},
+}
+AreaSettings.scorpion.map = {
+    "scorpion"
 }
 mod:hook_origin(StartGameWindowAreaSelection, "_set_area_presentation_info", function (self, area_name)
 	--local title_text = ""
@@ -635,6 +677,8 @@ mod:hook_origin(StartGameWindowAreaSelection, "_setup_area_widgets", function (s
 	local assigned_widgets = {}
 	local statistics_db = self.statistics_db
 	local stats_id = self._stats_id
+	local global_x_offset = 0
+	local global_y_offset = 0
 
 	for i = 1, num_areas, 1 do
 		local settings = sorted_area_settings[i]
@@ -668,10 +712,15 @@ mod:hook_origin(StartGameWindowAreaSelection, "_setup_area_widgets", function (s
 		local frame_texture = self:_get_selection_frame_by_difficulty_index(highest_completed_difficulty_index)
 		content.frame = frame_texture
 		local offset = widget.offset
-		local area_position_x = settings.map_settings.position and settings.map_settings.position[1] or 0
-		local area_position_y = settings.map_settings.position and settings.map_settings.position[2] or 0
-		offset[1] = area_position_x
-		offset[2] = area_position_y
+		if settings.map_settings then
+			local area_position_x = settings.map_settings.position and settings.map_settings.position[1] or 0
+			local area_position_y = settings.map_settings.position and settings.map_settings.position[2] or 0
+			offset[1] = area_position_x
+			offset[2] = area_position_y
+		else
+			offset[1] = global_x_offset
+			global_x_offset = global_x_offset + 200
+		end
 	end
 
 	self._active_area_widgets = assigned_widgets
@@ -1309,10 +1358,12 @@ mod:hook_origin(StartGameWindowMissionSelection, "_setup_levels_by_area", functi
 	self._is_dlc = dlc_name ~= nil
 
     
-    if self.area_settings.map_settings.present_by == "map" then
-        local map = self.area_settings.map
-        self:_setup_level_map()
-        self:_present_map(map)
+	if self.area_settings.map_settings then
+		if self.area_settings.map_settings.present_by == "map" then
+			local map = self.area_settings.map
+			self:_setup_level_map()
+			self:_present_map(map)
+		end
     else
         self:_setup_level_acts()
         self:_present_acts(acts)
@@ -1369,6 +1420,8 @@ StartGameWindowMissionSelection._present_map = function (self, acts)
 	local level_height_spacing = 250]]
 	local max_act_number = 3
 	local levels_by_act = self._levels_by_map
+	local global_x_offset = 0
+	local global_y_offset = 0
 
 	for act_key, levels in pairs(levels_by_act) do
 		if not acts or table.contains(acts, act_key) and act_key == self.parent:get_selected_area_name() then
@@ -1376,8 +1429,15 @@ StartGameWindowMissionSelection._present_map = function (self, acts)
 			for i = 1, #levels, 1 do
 				local level_data = levels[i]
 
-                local level_position_x = level_data.map_settings.position ~= nil and level_data.map_settings.position[1] or 0
-			    local level_position_y = level_data.map_settings.position ~= nil and level_data.map_settings.position[2] or 0
+				local level_position_x, level_position_y = nil
+				if level_data.map_settings then
+                	level_position_x = level_data.map_settings.position[1]
+					level_position_y = level_data.map_settings.position[2]
+				else
+					level_position_x = global_x_offset
+					global_x_offset = global_x_offset + 200
+					level_position_y = global_y_offset
+				end
 				local index = #assigned_widgets + 1
 				local scenegraph_id = "level_root_" .. index
 				local mission_selection_offset = level_data.mission_selection_offset
@@ -1509,28 +1569,6 @@ StartGameWindowMissionSelection._set_area_presentation_info = function (self, ar
 	widgets_by_name.level_title_divider.content.visible = draw_info
 	widgets_by_name.level_title.content.text = level_text
 	widgets_by_name.description_text.content.text = level_description_text
-end
-
-mod:hook_origin(StartGameWindowMissionSelection, "on_exit",function (self, params)
-	print("[StartGameWindow] Exit Substate StartGameWindowMissionSelection")
-	self:_on_close_button_pressed()
-	self.ui_animator = nil
-
-	self.parent:set_input_description(nil)
-end)
-
-StartGameWindowMissionSelection._on_close_button_pressed = function (self)
-	if self.area_settings.area_close then
-		local area_name = self.area_settings.area_close
-		local settings = AreaSettings[area_name]
-		local unlocked = true
-
-		local parent = self.parent
-		local new_layout_name = "mission_selection_custom"
-		parent:set_selected_area_name(area_name)
-		parent:set_layout_by_name("mission_selection_twitch")
-		parent:set_layout_by_name(new_layout_name)
-	end
 end
 
 mod:hook_origin(StartGameWindowMissionSelection, "_handle_input", function (self, dt, t)

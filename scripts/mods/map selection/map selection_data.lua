@@ -1,7 +1,7 @@
 local mod = get_mod("map selection")
 
 return {
-	name = "map selection",
+	name = "VT1 Style Map Selection (WIP)",
 	description = mod:localize("mod_description"),
 	is_togglable = true,
 	custom_gui_textures = {
