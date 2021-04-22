@@ -8,6 +8,35 @@ mod:hook("Localize", function(func, text_id)
     return func(text_id)
 end)
 
+mod:hook(SaveManager, "auto_save", function (func, self, file_name, data, callback, force_local_save, exit_game)
+	if exit_game then
+		local id = (rawget(_G, "Steam") and Steam.user_id()) or "local_save"
+		local _player_data = data.player_data
+		local _player_id = _player_data[id]
+		local _mission_selection = _player_id.mission_selection
+		if _mission_selection.custom.area_name == "helmgart_inner"then
+			_mission_selection.custom.area_name = "helmgart"
+			mod:info("Changed deus_custom mission selection area name to helmgart")
+		end
+		if _mission_selection.twitch.area_name == "helmgart_inner" then
+			_mission_selection.twitch.area_name = "helmgart"
+			mod:info("Changed twitch mission selection area name to helmgart")
+		end
+	end
+
+	return func(self, file_name, data, callback, force_local_save)
+end)
+
+-- Modify Save Data to avoid crash in official
+mod:hook(PopupManager, "query_result", function (func, self, popup_id)
+	local result, params = func(self, popup_id)
+	if result == "end_game" then
+		Managers.save:auto_save(SaveFileName, SaveData, nil, nil, true)
+	end
+
+	return result, params
+end)
+
 -- Modified Acts
 --if mod:get("modified_acts") then
     -- Act 1
